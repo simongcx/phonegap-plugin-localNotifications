@@ -8,6 +8,7 @@ import org.json.JSONException;
 
 import android.content.Context;
 import android.util.Log;
+import java.util.Set;
 
 import java.lang.Exception;
 
@@ -51,16 +52,17 @@ public class LocalNotification extends CordovaPlugin {
         String alarmId;
         this.alarm = new AlarmHelper();
         this.alarm.setContext(cordova.getActivity().getApplicationContext());
-        
-        try {
-            alarmId = args.getString(0);
-        } catch (Exception e) {
-            Log.d(TAG, "Unable to process alarm with string id: " + args.getString(0));
-            callbackContext.error("Cannot use string for notification id.");
-            return true;
-        }
 
         if (action.equalsIgnoreCase("addNotification")) {
+
+            try {
+                alarmId = args.getString(0); //getString coerces if necessary, throws JSONexception if not
+            } catch (Exception e) {
+                Log.e(TAG, "No ID provided.");
+                callbackContext.error("No ID provided.");
+                return true;
+            }
+
 
             try {               
                 long seconds = System.currentTimeMillis() + (args.getJSONObject(1).getLong("seconds") * 1000);
@@ -86,7 +88,9 @@ public class LocalNotification extends CordovaPlugin {
                         Log.e(TAG, "The icon resource couldn't be found. Taking default icon.");
                     }
                 }
-
+                
+                args.getJSONObject(1).put("seconds", seconds);
+                
                 persistAlarm(alarmId, args);
                 return this.add(callbackContext, title == "" ? "Notification" : title,
                         args.getJSONObject(1).getString("message"), ticker == "" ? args.getJSONObject(1).getString("message") : ticker,
@@ -96,14 +100,34 @@ public class LocalNotification extends CordovaPlugin {
             }
             
         } else if (action.equalsIgnoreCase("cancelNotification")) {
-            unpersistAlarm(alarmId);
-            return this.cancelNotification(callbackContext, alarmId);
+            
+            try {
+                alarmId = args.getString(0); //getString coerces if necessary, throws JSONexception if not
+            } catch (Exception e) {
+                Log.e(TAG, "No ID provided.");
+                callbackContext.error("No ID provided.");
+                return true;
+            }
+            
+            boolean result = cancelNotification(callbackContext, alarmId);
+            
+            if (result) {
+                callbackContext.success();
+                unpersistAlarm(alarmId);
+                return true;
+            } else {
+                callbackContext.error("Cancel notification failed, ID: " + alarmId);
+                return false;
+            }
+
+            
         } else if (action.equalsIgnoreCase("cancelAllNotifications")) {
-            unpersistAlarmAll();
+            Log.d(TAG, "cancelAllNotifications called");
             return this.cancelAllNotifications(callbackContext);
         }
-
-        return false;
+        
+        Log.e(TAG, "Didn't match any action, returning false");
+        return false; // Returning false results in a "MethodNotFound" error.
     }
 
     /**
@@ -148,15 +172,8 @@ public class LocalNotification extends CordovaPlugin {
     public Boolean cancelNotification(CallbackContext callbackContext, String notificationId) {
         Log.d(TAG, "cancelNotification: Canceling event with id: " + notificationId);
 
-        boolean result = alarm.cancelAlarm(notificationId);
-        
-        if (result) {
-            callbackContext.success();
-            return true;
-        } else {
-            callbackContext.error("Cancel notification failed.");
-            return false;
-        }
+        return alarm.cancelAlarm(notificationId);
+
     }
 
     /**
@@ -172,6 +189,29 @@ public class LocalNotification extends CordovaPlugin {
          * all our alarms to loop through these alarms and unregister them one
          * by one.
          */
+        
+        Set<String> alarmIds = cordova.getActivity().getApplicationContext().getSharedPreferences(TAG, Context.MODE_PRIVATE).getAll().keySet();
+        
+        Log.d(LocalNotification.TAG, "Number of alarmIds: " + alarmIds.size());
+
+        boolean outcome = true;
+
+        for (String alarmId : alarmIds) {
+            Log.d(LocalNotification.TAG, "Canceling notification with id: " + alarmId);
+            boolean result = this.cancelNotification(callbackContext, alarmId);
+            if (result) {
+                unpersistAlarm(alarmId);
+            }
+            else {
+                Log.e(LocalNotification.TAG, "Failed to cancel notification with id: " + alarmId);
+                callbackContext.error("Failed to cancel all notifications. Failed to cancel notification with id: " + alarmId);
+                return false;
+            }
+        }
+        callbackContext.success();
+        return true;
+        
+        /*
         boolean result = alarm.cancelAll(cordova.getActivity()
                                                 .getApplicationContext()
                                                 .getSharedPreferences(TAG, Context.MODE_PRIVATE));
@@ -183,6 +223,7 @@ public class LocalNotification extends CordovaPlugin {
             callbackContext.error("Cancel all notifications failed.");
             return false;
         }
+        */
     }
 
     public static CordovaWebView getCordovaWebView() {

@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
+import android.content.SharedPreferences;
+
 /**
  * The alarm receiver is triggered when a scheduled alarm is fired. This class
  * reads the information in the intent and displays this information in the
@@ -31,7 +33,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		Log.d("AlarmReceiver", "AlarmReceiver invoked!");
+		Log.d(LocalNotification.TAG, "AlarmReceiver invoked!");
 
 		Bundle bundle = intent.getExtras();
 		NotificationManager notificationMgr = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -79,5 +81,18 @@ public class AlarmReceiver extends BroadcastReceiver {
 			// Send JS a message
 			LocalNotification.getCordovaWebView().sendJavascript("cordova.fireDocumentEvent('receivedLocalNotification', { active : true, notificationId : " + notificationId + " })");
 		}
+        
+        try {
+            String strnotifid = "" + notificationId;
+            context.getApplicationContext()
+                                    .getSharedPreferences(LocalNotification.TAG, Context.MODE_PRIVATE)
+                                    .edit()
+                                    .remove(strnotifid)
+                                    .commit();
+            Log.d(LocalNotification.TAG, "Notification unpersisted: " + notificationId);
+		} catch (Exception e) {
+			Log.e(LocalNotification.TAG, "Failure to unpersist: " + e);
+		}        
+            
 	}
 }

@@ -34,11 +34,11 @@ public class AlarmHelper extends Activity {
         int notificationId = 0; // Default Id
         try {
             notificationId = bundle.getInt(AlarmReceiver.NOTIFICATION_ID);
-            Log.d("AlarmHelper", "Opening Activity with: " + notificationId);
+            Log.d(LocalNotification.TAG, "Opening Activity with: " + notificationId);
         } catch (Exception e) {
             try {
                 notificationId = Integer.parseInt(bundle.getString(AlarmReceiver.NOTIFICATION_ID));
-                Log.d("AlarmHelper", "Opening Activity with: " + notificationId);
+                Log.d(LocalNotification.TAG, "Opening Activity with: " + notificationId);
             } catch (Exception e2) {
             }
         }
@@ -87,6 +87,7 @@ public class AlarmHelper extends Activity {
         try {
             getAlarmManager().cancel(pi);
         } catch (Exception e) {
+            Log.e(LocalNotification.TAG, "Exception: " + e);
             return false;
         }
         return true;
@@ -97,6 +98,8 @@ public class AlarmHelper extends Activity {
      */
     public boolean cancelAll(SharedPreferences alarmSettings) {
         Set<String> alarmIds = alarmSettings.getAll().keySet();
+        
+        Log.d(LocalNotification.TAG, "Number of alarmIds: " + alarmIds.size());
 
         for (String alarmId : alarmIds) {
             Log.d(LocalNotification.TAG, "Canceling notification with id: " + alarmId);

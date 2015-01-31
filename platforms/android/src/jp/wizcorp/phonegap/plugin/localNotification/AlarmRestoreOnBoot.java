@@ -22,6 +22,7 @@ public class AlarmRestoreOnBoot extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        
         // Obtain alarm details form Shared Preferences
         SharedPreferences alarmSettings = context.getSharedPreferences(LocalNotification.TAG, Context.MODE_PRIVATE);
         final AlarmHelper alarm = new AlarmHelper();
@@ -34,22 +35,54 @@ public class AlarmRestoreOnBoot extends BroadcastReceiver {
          */
         for (String alarmId : allAlarms.keySet()) {
             try {
-                JSONArray alarmDetails = new JSONArray(alarmSettings.getString(alarmId, ""));
-                AlarmOptions options = new AlarmOptions(alarmDetails, context);
+                JSONArray args = new JSONArray(alarmSettings.getString(alarmId, "")); // second parameter is default valu
+                Log.d(LocalNotification.TAG, "alarmDetails in AlarmRestoreOnBoot.onReceive: " + args.toString());
+           
+                //long seconds = System.currentTimeMillis() + (args.getJSONObject(1).getLong("seconds") * 1000);
+                long seconds = args.getJSONObject(1).getLong("seconds");
+                String title, ticker, icon, message;
+                int iconResource = android.R.drawable.btn_star_big_on;
 
-                alarm.addAlarm(options.getAlarmTitle(),
-                        options.getAlarmSubTitle(),
-                        options.getAlarmTicker(),
-                        options.getNotificationId(),
-                        options.getIcon(),
-                        options.getCal().getTimeInMillis());
+                title = ticker = icon = message = "";
+                try {
+                    title = args.getJSONObject(1).getString("title");
+                } catch (Exception e){
+                    title = "Notification";
+                }
+                try {
+                    message = args.getJSONObject(1).getString("message");
+                } catch (Exception e){
+                    message = "Notification message";
+                }
+                try {
+                    ticker = args.getJSONObject(1).getString("ticker");
+                } catch (Exception e) {
+                    ticker = message;
+                }
+                try {
+                    icon = args.getJSONObject(1).getString("icon");
+                } catch (Exception e) {}
 
-            } catch (JSONException e) {
-                Log.d(LocalNotification.TAG,
-                    "AlarmRestoreOnBoot: Error while restoring alarm details after reboot: " + e.toString());
+
+                if (icon != "") {
+                    try {
+                        iconResource = android.R.drawable.btn_star_big_on;
+                        //iconResource = cordova.getActivity().getResources().getIdentifier(icon, "drawable", cordova.getActivity().getPackageName());
+                    } catch(Exception e) {
+                        Log.e(LocalNotification.TAG, "The icon resource couldn't be found. Taking default icon.");
+                    }
+                }
+                        
+                alarm.addAlarm(title, message, ticker, alarmId, iconResource, seconds);
+                        
+                        
+            } catch (Exception e) {
+                Log.e(LocalNotification.TAG, "AlarmRestoreOnBoot: Error while restoring alarm details after reboot: " + e.toString());
             }
 
-            Log.d(LocalNotification.TAG, "AlarmRestoreOnBoot: Successfully restored alarms upon reboot");
+            Log.d(LocalNotification.TAG, "AlarmRestoreOnBoot: Successfully restored alarms id upon reboot: " + alarmId);
+            
         }
+        Log.d(LocalNotification.TAG, "AlarmRestoreOnBoot: Successfully restored alarms upon reboot");
     }
 }
