@@ -24,9 +24,13 @@ LocalNotification.prototype.add = function (id, options, success, failure) {
 LocalNotification.prototype.cancel = function (id) {
 		exec(null, null, "LocalNotification", "cancelNotification", [id]);
 	};
+    
+LocalNotification.prototype.cancelwithcallback = function (id, success, failure) {
+		exec(success, failure, "LocalNotification", "cancelNotification", [id]);
+	};
 	
-LocalNotification.prototype.cancelAll = function () {
-        exec(null, null,"LocalNotification", "cancelAllNotifications", []);
+LocalNotification.prototype.cancelAll = function (success, failure) {
+        exec(success, failure,"LocalNotification", "cancelAllNotifications", []);
     };
     
 LocalNotification.prototype.queue = function (id, options, success, failure) {

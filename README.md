@@ -119,10 +119,18 @@ Cancels the notification the given notification id.
 	id: The notification id.
 ```
 
+### `cancelwithcallback(int id, Function success, Function failure)`
 
-### `cancelAll()`
+Cancels the notification the given notification id. `success` and `failure` refer to function callbacks. `failure` will trigger if the cancellation fails, `success` will trigger if the cancellation succeeds.
 
-Cancels all notifications.
+```
+	id: The notification id.
+```
+
+
+### `cancelAll(Function success, Function failure)`
+
+Cancels all notifications. `success` and `failure` refer to function callbacks. `failure` will trigger if any one of the cancellation operations, which may be a partial success. `success` will only trigger with complete success.
 
 
 ### `setApplicationBadge(int value)`
